@@ -1,29 +1,37 @@
 // three.js front page spinning cube with minor changes:
 
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-let camera, scene, renderer;
-let geometry, material, mesh;
+let camera = new THREE.PerspectiveCamera( 42, 1, 0.2, 20 );
+	camera.position.set( 2, 1, 3 );
+	camera.lookAt( 3, 0.66, 1.38 );
 
-init();
+let scene = new THREE.Scene();
+	scene.add( new THREE.AmbientLight( 0x3f3f3f ) );
 
-function init() {
+let light = new THREE.DirectionalLight( 0xffffff, 1 );
+	light.position.set( -1, 1, 1 );
+	scene.add( light );
 
-	camera = new THREE.PerspectiveCamera( 42, 1, 0.01, 10 );
-	camera.position.z = 1;
-
-	scene = new THREE.Scene();
-
-	geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
-	material = new THREE.MeshNormalMaterial();
-
-	mesh = new THREE.Mesh( geometry, material );
-	scene.add( mesh );
-
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
+let renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setAnimationLoop( animation );
 
-}
+let clock = new THREE.Clock(), mixer, actions = [];
+
+new GLTFLoader().load( 'thumbs_up/big_smile_girl.gltf', function( gltf ) {
+
+	mixer = new THREE.AnimationMixer( gltf.scene );
+
+	gltf.animations.forEach( function ( clip ) {
+		let action = mixer.clipAction( clip ).play();
+		setWeight( action, actions.length ? 0 : 1 );
+		actions.push( action );
+	} );
+
+	scene.add( gltf.scene );
+
+} );
 
 function animation( time ) {
 
@@ -31,8 +39,7 @@ function animation( time ) {
 
 	if( !renderer.domElement.parentNode ) return;
 
-	mesh.rotation.x = time / 2000;
-	mesh.rotation.y = time / 1000;
+	if( mixer ) mixer.update( clock.getDelta() );
 
 	renderer.render( scene, camera );
 
@@ -79,3 +86,62 @@ export function mount( container ) {
 	}
 
 }
+
+export function playAnimation( index ) {
+
+	let currentAction = actions.find( function( action ) {
+		return action.enabled && ( action.weight > 0 );
+	} );
+
+	console.log( 'currentAction', actions.indexOf( currentAction ) );
+
+	if( currentAction && actions[index] ) {
+		synchronizeCrossFade( currentAction, actions[index], 0.5 );
+	}
+}
+
+// some code from https://github.com/mrdoob/three.js/blob/master/examples/webgl_animation_skinning_blending.html
+
+
+			function synchronizeCrossFade( startAction, endAction, duration ) {
+
+				mixer.addEventListener( 'loop', onLoopFinished );
+
+				function onLoopFinished( event ) {
+
+					if ( event.action === startAction ) {
+
+						mixer.removeEventListener( 'loop', onLoopFinished );
+
+						executeCrossFade( startAction, endAction, duration );
+
+					}
+
+				}
+
+			}
+
+			function executeCrossFade( startAction, endAction, duration ) {
+
+				// Not only the start action, but also the end action must get a weight of 1 before fading
+				// (concerning the start action this is already guaranteed in this place)
+
+				setWeight( endAction, 1 );
+				endAction.time = 0;
+
+				// Crossfade with warping - you can also try without warping by setting the third parameter to false
+
+				startAction.crossFadeTo( endAction, duration, true );
+
+			}
+
+			// This function is needed, since animationAction.crossFadeTo() disables its start action and sets
+			// the start action's timeScale to ((start animation's duration) / (end animation's duration))
+
+			function setWeight( action, weight ) {
+
+				action.enabled = true;
+				action.setEffectiveTimeScale( 1 );
+				action.setEffectiveWeight( weight );
+
+			}
