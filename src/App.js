@@ -1,4 +1,5 @@
 import './App.css';
+import Cube from './Cube';
 import Dashboard from './Dashboard';
 import Layout from './Layout';
 
@@ -7,6 +8,7 @@ function App() {
     <div className="">
         <Layout>
           <Dashboard />
+          <Cube />
         </Layout>
     </div>
   );
