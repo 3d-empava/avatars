@@ -4,14 +4,15 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 let camera = new THREE.PerspectiveCamera( 42, 1, 0.2, 20 );
-	camera.position.set( 2, 1, 3 );
+	camera.position.set( 3.6, 0.66, 3.2 );
 	camera.lookAt( 3, 0.66, 1.38 );
 
 let scene = new THREE.Scene();
-	scene.add( new THREE.AmbientLight( 0x3f3f3f ) );
+	scene.background = new THREE.TextureLoader().load( 'background.png' );
+	scene.add( new THREE.AmbientLight( 0xffdfef, 0.5 ) );
 
-let light = new THREE.DirectionalLight( 0xffffff, 1 );
-	light.position.set( -1, 1, 1 );
+let light = new THREE.DirectionalLight( 0xffffff, 0.7 );
+	light.position.set( 0, 1, 2 );
 	scene.add( light );
 
 let renderer = new THREE.WebGLRenderer( { antialias: true } );
